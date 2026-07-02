@@ -1,6 +1,13 @@
-// API 통신을 위한 토큰 관리
-let token = localStorage.getItem('cat_app_token') || null;
-let loggedInUser = localStorage.getItem('cat_app_user') ? JSON.parse(localStorage.getItem('cat_app_user')) : null;
+// Supabase 클라이언트 직접 초기화 (CDN을 통해 전역 로드된 supabase 객체 사용)
+const supabaseUrl = 'https://zdgdxruhkcetvrmajypo.supabase.co';
+const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InpkZ2R4cnVoa2NldHZybWFqeXBvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI5NDQ2MDEsImV4cCI6MjA5ODUyMDYwMX0.eubSdBmN32A5aKY7JAGkDeCr6RKwYU2Yj-USmeb4rJs';
+const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+
+// 로그인 유저 상태 변수
+let currentUser = null;
+
+// 정적 고양이 이미지 목록 (사용자가 준비한 images/*.jpg 활용)
+const catImages = ['1.jpg', '2.jpg', '3.jpg', '4.jpg', '5.jpg', '6.jpg'];
 
 // DOM 요소 취득
 const canvasArea = document.getElementById('canvas-area');
@@ -20,15 +27,23 @@ const logoutBtn = document.getElementById('logout-btn');
 const menuToggleBtn = document.getElementById('menu-toggle');
 const header = document.getElementById('header');
 
-// 초기 상태 업데이트
-updateAuthUI();
+// Supabase Auth 세션 상태 변경 실시간 리스너 바인딩
+supabaseClient.auth.onAuthStateChange((event, session) => {
+  if (session) {
+    currentUser = session.user;
+    updateAuthUI(true, currentUser.email);
+  } else {
+    currentUser = null;
+    updateAuthUI(false);
+  }
+});
 
 // 1. 회원가입 및 로그인 UI 갱신 함수
-function updateAuthUI() {
-  if (token && loggedInUser) {
+function updateAuthUI(isLoggedIn, email = '') {
+  if (isLoggedIn) {
     guestMenu.style.display = 'none';
     userMenu.style.display = 'flex';
-    userDisplay.textContent = loggedInUser.email;
+    userDisplay.textContent = email;
     statusText.textContent = 'Online';
     statusText.className = 'status-online';
     
@@ -70,7 +85,7 @@ function clearCanvasCats() {
   spawnedCats.forEach(cat => cat.remove());
 }
 
-// 2. 회원가입 이벤트 핸들러
+// 2. 회원가입 이벤트 핸들러 (Supabase Auth API 직접 통신)
 registerBtn.addEventListener('click', async () => {
   const email = emailInput.value.trim();
   const password = passwordInput.value;
@@ -81,26 +96,23 @@ registerBtn.addEventListener('click', async () => {
   }
 
   try {
-    const response = await fetch('/api/auth/register', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password })
+    const { data, error } = await supabaseClient.auth.signUp({
+      email,
+      password,
     });
 
-    const data = await response.json();
-    if (response.ok) {
-      alert(data.message || '회원가입에 성공했습니다! 로그인해 주세요.');
-      closeMenu();
+    if (error) {
+      alert(`회원가입 실패: ${error.message}`);
     } else {
-      alert(`회원가입 실패: ${data.error}`);
+      alert('회원가입 요청 성공! 이메일 확인 또는 즉시 로그인이 가능합니다.');
+      closeMenu();
     }
-  } catch (error) {
-    console.error('회원가입 통신 에러:', error);
-    alert('서버와의 통신 오류가 발생했습니다.');
+  } catch (err) {
+    console.error('회원가입 오류:', err);
   }
 });
 
-// 3. 로그인 이벤트 핸들러
+// 3. 로그인 이벤트 핸들러 (Supabase Auth API 직접 통신)
 loginBtn.addEventListener('click', async () => {
   const email = emailInput.value.trim();
   const password = passwordInput.value;
@@ -111,90 +123,35 @@ loginBtn.addEventListener('click', async () => {
   }
 
   try {
-    const response = await fetch('/api/auth/login', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ email, password })
+    const { data, error } = await supabaseClient.auth.signInWithPassword({
+      email,
+      password,
     });
 
-    const data = await response.json();
-    if (response.ok) {
-      token = data.token;
-      loggedInUser = data.user;
-      localStorage.setItem('cat_app_token', token);
-      localStorage.setItem('cat_app_user', JSON.stringify(loggedInUser));
-
+    if (error) {
+      alert(`로그인 실패: ${error.message}`);
+    } else {
       // 입력란 비우기
       emailInput.value = '';
       passwordInput.value = '';
-
-      updateAuthUI();
       closeMenu();
-    } else {
-      alert(`로그인 실패: ${data.error}`);
     }
-  } catch (error) {
-    console.error('로그인 통신 에러:', error);
-    alert('로그인 처리 중 에러가 발생했습니다.');
+  } catch (err) {
+    console.error('로그인 오류:', err);
   }
 });
 
 // 4. 로그아웃 이벤트 핸들러
-logoutBtn.addEventListener('click', () => {
-  token = null;
-  loggedInUser = null;
-  localStorage.removeItem('cat_app_token');
-  localStorage.removeItem('cat_app_user');
-  updateAuthUI();
+logoutBtn.addEventListener('click', async () => {
+  await supabaseClient.auth.signOut();
   closeMenu();
-});
-
-// 5. 캔버스 클릭 시 고양이 생성 이벤트 핸들러
-canvasArea.addEventListener('click', async (event) => {
-  // 이미 생성된 고양이 자체를 누른 경우에는 통과 (삭제 이벤트가 대신 처리함)
-  if (event.target.classList.contains('cat-spawn')) {
-    return;
-  }
-
-  // 메뉴가 열려있다면 닫아줍니다.
-  closeMenu();
-
-  // 클릭 좌표 획득 (캔버스 기준)
-  const rect = canvasArea.getBoundingClientRect();
-  const x = event.clientX - rect.left;
-  const y = event.clientY - rect.top;
-
-  const headers = {
-    'Content-Type': 'application/json'
-  };
-  if (token) {
-    headers['Authorization'] = `Bearer ${token}`;
-  }
-
-  try {
-    const response = await fetch('/api/cat/spawn', {
-      method: 'POST',
-      headers: headers,
-      body: JSON.stringify({ x, y })
-    });
-
-    const data = await response.json();
-    if (response.ok && data.success) {
-      renderCat(data.imagePath, x, y, data.logId);
-      updateCatCount();
-    } else {
-      alert(`소환 실패: ${data.error}`);
-    }
-  } catch (error) {
-    console.error('고양이 생성 중 에러:', error);
-  }
 });
 
 // 폭죽 파티클 효과 생성 함수
 function createConfetti(x, y, isDelete = false) {
   const colors = isDelete 
-    ? ['#ff5a5f', '#ff7a00', '#ffb3b5', '#ffd700', '#ffffff'] // 삭제 시 (붉은 톤)
-    : ['#ff914d', '#ffbe7a', '#ffe4b5', '#ffffff', '#ffd700']; // 소환 시 (주황 톤)
+    ? ['#ff5a5f', '#ff7a00', '#ffb3b5', '#ffd700', '#ffffff'] // 삭제 시
+    : ['#ff914d', '#ffbe7a', '#ffe4b5', '#ffffff', '#ffd700']; // 소환 시
   const particleCount = 14;
 
   for (let i = 0; i < particleCount; i++) {
@@ -204,7 +161,6 @@ function createConfetti(x, y, isDelete = false) {
     const randomColor = colors[Math.floor(Math.random() * colors.length)];
     particle.style.setProperty('--color', randomColor);
 
-    // 사방으로 퍼지게 무작위 각도와 거리 계산
     const angle = Math.random() * Math.PI * 2;
     const velocity = 25 + Math.random() * 65; 
     const dx = `${Math.cos(angle) * velocity}px`;
@@ -213,7 +169,6 @@ function createConfetti(x, y, isDelete = false) {
     particle.style.setProperty('--dx', dx);
     particle.style.setProperty('--dy', dy);
     
-    // 조각 크기를 다양하게 조절 (4px ~ 8px)
     const size = 4 + Math.random() * 4;
     particle.style.width = `${size}px`;
     particle.style.height = `${size}px`;
@@ -223,16 +178,64 @@ function createConfetti(x, y, isDelete = false) {
 
     canvasArea.appendChild(particle);
 
-    // 애니메이션 종료(0.45초) 후 요소 제거
     setTimeout(() => {
       particle.remove();
     }, 450);
   }
 }
 
+// 5. 캔버스 클릭 시 고양이 생성 이벤트 핸들러
+canvasArea.addEventListener('click', async (event) => {
+  if (event.target.classList.contains('cat-spawn')) {
+    return;
+  }
+
+  closeMenu();
+
+  const rect = canvasArea.getBoundingClientRect();
+  const x = event.clientX - rect.left;
+  const y = event.clientY - rect.top;
+
+  // 무작위 이미지 선택
+  const randomIndex = Math.floor(Math.random() * catImages.length);
+  const selectedImage = catImages[randomIndex];
+  const imagePath = `images/${selectedImage}`; // 루트 images 폴더의 파일 가리킴
+
+  // 로그인 상태일 때만 Supabase DB 적재
+  if (currentUser) {
+    try {
+      const { data, error } = await supabaseClient
+        .from('cat_logs')
+        .insert([
+          {
+            user_id: currentUser.id,
+            image_path: imagePath,
+            pos_x: parseInt(x, 10),
+            pos_y: parseInt(y, 10)
+          }
+        ])
+        .select();
+
+      if (error) {
+        console.error('DB 인서트 오류:', error.message);
+        alert(`로그 저장 실패: ${error.message}`);
+        return;
+      }
+
+      renderCat(imagePath, x, y, data[0].id);
+      updateCatCount();
+    } catch (err) {
+      console.error(err);
+    }
+  } else {
+    // 비로그인 상태일 때는 DB 없이 로컬 렌더링만 진행
+    renderCat(imagePath, x, y, null);
+    updateCatCount();
+  }
+});
+
 // 6. 화면에 고양이 그리기 및 개별 삭제 이벤트 연결
 function renderCat(imagePath, x, y, logId) {
-  // 소환 시 폭죽 이펙트 터뜨리기
   createConfetti(x, y, false);
 
   const img = document.createElement('img');
@@ -244,40 +247,35 @@ function renderCat(imagePath, x, y, logId) {
 
   // 고양이를 다시 클릭하면 삭제
   img.addEventListener('click', async (e) => {
-    e.stopPropagation(); // 부모 캔버스 클릭 이벤트 버블링 차단 (중요!)
+    e.stopPropagation();
 
-    // 메뉴가 열려있다면 닫아줍니다.
     closeMenu();
 
     const currentLogId = img.dataset.logId;
 
-    // 삭제 시 폭죽 이펙트 터뜨리기
     const imgX = parseInt(img.style.left, 10);
     const imgY = parseInt(img.style.top, 10);
     createConfetti(imgX, imgY, true);
 
-    // [중요] 딜레이 없이 즉시 화면에서 이미지 엘리먼트 제거
+    // 즉시 제거
     img.remove();
     updateCatCount();
 
-    // 백그라운드에서 DB 기록 비동기 삭제 수행
-    const headers = {};
-    if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
-    }
+    // DB에 기록이 있었고 로그인 상태면 삭제 쿼리 비동기 수행
+    if (currentLogId && currentLogId !== 'null' && currentUser) {
+      try {
+        const { error } = await supabaseClient
+          .from('cat_logs')
+          .delete()
+          .eq('id', currentLogId)
+          .eq('user_id', currentUser.id);
 
-    try {
-      const response = await fetch(`/api/cat/${currentLogId}`, {
-        method: 'DELETE',
-        headers: headers
-      });
-
-      const data = await response.json();
-      if (!response.ok || !data.success) {
-        console.warn(`서버 DB 로그 삭제 경고: ${data.error}`);
+        if (error) {
+          console.warn(`원격 DB 로그 삭제 실패: ${error.message}`);
+        }
+      } catch (err) {
+        console.error(err);
       }
-    } catch (error) {
-      console.error('고양이 DB 삭제 통신 에러:', error);
     }
   });
 
@@ -292,24 +290,26 @@ function updateCatCount() {
 
 // 8. DB로부터 이전 생성 히스토리 전체 불러와 캔버스에 복원
 async function loadHistory() {
-  try {
-    const response = await fetch('/api/cat/history', {
-      method: 'GET',
-      headers: {
-        'Authorization': `Bearer ${token}`
-      }
-    });
+  if (!currentUser) return;
 
-    if (response.ok) {
-      const history = await response.json();
-      clearCanvasCats();
-      history.forEach(log => {
-        renderCat(log.image_path, log.pos_x, log.pos_y, log.id);
-      });
-      updateCatCount();
+  try {
+    const { data, error } = await supabaseClient
+      .from('cat_logs')
+      .select('*')
+      .eq('user_id', currentUser.id)
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.error('히스토리 불러오기 실패:', error.message);
+      return;
     }
-  } catch (error) {
-    console.error('히스토리 로드 실패:', error);
+
+    clearCanvasCats();
+    data.forEach(log => {
+      renderCat(log.image_path, log.pos_x, log.pos_y, log.id);
+    });
+    updateCatCount();
+  } catch (err) {
+    console.error('히스토리 로드 에러:', err);
   }
 }
-
