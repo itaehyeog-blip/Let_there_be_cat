@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Let there be cat</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Noto+Sans+KR:wght@300;400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div id="app">
+    <!-- 플로팅 햄버거 토글 버튼 (헤더 외부) -->
+    <button id="menu-toggle" class="menu-toggle-btn" aria-label="메뉴 열기">
+      <span class="bar"></span>
+      <span class="bar"></span>
+      <span class="bar"></span>
+    </button>
+
+    <!-- 슬라이드 다운 헤더 컨트롤 바 -->
+    <header id="header" class="slide-header">
+      <div class="logo">🐱 Let there be cat</div>
+      
+      <div id="auth-controls">
+        <!-- 로그인 안 되어 있을 때 -->
+        <div id="guest-menu">
+          <input type="email" id="auth-email" placeholder="이메일 입력">
+          <input type="password" id="auth-password" placeholder="비밀번호 입력">
+          <button id="login-btn" class="btn primary">로그인</button>
+          <button id="register-btn" class="btn secondary">회원가입</button>
+        </div>
+        <!-- 로그인 되어 있을 때 -->
+        <div id="user-menu" style="display: none;">
+          <span id="user-display">사용자 이메일</span>
+          <button id="logout-btn" class="btn logout">로그아웃</button>
+        </div>
+      </div>
+    </header>
+
+    <!-- 메인 캔버스 영역 -->
+    <main id="canvas-area">
+      <!-- 깔끔하게 배경만 노출됩니다 -->
+    </main>
+
+    <!-- 하단 상태 바 -->
+    <footer id="footer">
+      <div>Status: <span id="status-text" class="status-offline">Offline</span></div>
+      <div>소환된 총 고양이 수: <span id="cat-count">0</span>마리</div>
+    </footer>
+  </div>
+
+  <script src="/js/main.js"></script>
+</body>
+</html>

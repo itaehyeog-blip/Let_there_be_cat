@@ -1,0 +1,280 @@
+/* CSS Design System for Cat Spawner - Warm Orange & Pastel Theme */
+
+:root {
+  --bg-color: #fffbf7; /* 부드럽고 연한 크림 오렌지 */
+  --panel-bg: rgba(255, 255, 255, 0.95);
+  --panel-border: rgba(255, 145, 77, 0.15);
+  --text-primary: #4a3423; /* 따뜻한 초콜릿 브라운 */
+  --text-secondary: #8c715c;
+  --accent-color: #ff914d; /* 상큼한 연주황 */
+  --accent-hover: #ff7c2b;
+  --danger-color: #f87171;
+  --success-color: #34d399;
+  --font-main: 'Outfit', 'Noto Sans KR', sans-serif;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body, html {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: var(--bg-color);
+  color: var(--text-primary);
+  font-family: var(--font-main);
+}
+
+#app {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* Header style with warm light layout - Slide down drawer */
+#header {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 76px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 88px 16px 24px; /* 햄버거 버튼과 겹치지 않도록 오른쪽 패딩 */
+  background: rgba(255, 252, 247, 0.95);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--panel-border);
+  z-index: 110;
+  transform: translateY(-100%);
+  transition: transform 0.3s cubic-bezier(0.165, 0.84, 0.44, 1);
+}
+
+#header.active {
+  transform: translateY(0);
+}
+
+.logo {
+  font-size: 1.5rem;
+  font-weight: 800;
+  background: linear-gradient(135deg, #ff914d, #f97316);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  letter-spacing: -0.5px;
+}
+
+#auth-controls {
+  display: flex;
+  gap: 12px;
+}
+
+/* 플로팅 햄버거 토글 버튼 스타일 */
+.menu-toggle-btn {
+  position: fixed;
+  top: 16px;
+  right: 24px;
+  width: 44px;
+  height: 44px;
+  background: rgba(255, 252, 247, 0.85);
+  border: 1px solid rgba(255, 145, 77, 0.25);
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  z-index: 120;
+  box-shadow: 0 4px 15px rgba(255, 145, 77, 0.15);
+  transition: all 0.2s ease;
+}
+
+.menu-toggle-btn:hover {
+  background: #ffffff;
+  border-color: var(--accent-color);
+  box-shadow: 0 4px 18px rgba(255, 145, 77, 0.25);
+}
+
+.menu-toggle-btn .bar {
+  width: 20px;
+  height: 2.2px;
+  background-color: var(--text-primary);
+  border-radius: 4px;
+  transition: all 0.3s cubic-bezier(0.645, 0.045, 0.355, 1);
+}
+
+/* 햄버거 버튼 활성화 상태 (X로 변형) */
+.menu-toggle-btn.active .bar:nth-child(1) {
+  transform: translateY(6.2px) rotate(45deg);
+  background-color: var(--accent-color);
+}
+
+.menu-toggle-btn.active .bar:nth-child(2) {
+  opacity: 0;
+}
+
+.menu-toggle-btn.active .bar:nth-child(3) {
+  transform: translateY(-6.2px) rotate(-45deg);
+  background-color: var(--accent-color);
+}
+
+#guest-menu {
+  display: flex;
+  gap: 8px;
+}
+
+input {
+  background: #ffffff;
+  border: 1px solid rgba(255, 145, 77, 0.3);
+  border-radius: 8px;
+  padding: 8px 12px;
+  color: var(--text-primary);
+  font-family: var(--font-main);
+  font-size: 0.9rem;
+  outline: none;
+  transition: all 0.3s ease;
+}
+
+input::placeholder {
+  color: #cbb4a2;
+}
+
+input:focus {
+  border-color: var(--accent-color);
+  box-shadow: 0 0 0 3px rgba(255, 145, 77, 0.2);
+}
+
+.btn {
+  padding: 8px 16px;
+  border-radius: 8px;
+  border: none;
+  font-family: var(--font-main);
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.btn.primary {
+  background-color: var(--accent-color);
+  color: white;
+}
+
+.btn.primary:hover {
+  background-color: var(--accent-hover);
+  transform: translateY(-1px);
+}
+
+.btn.secondary {
+  background: transparent;
+  border: 1px solid rgba(255, 145, 77, 0.4);
+  color: var(--accent-color);
+}
+
+.btn.secondary:hover {
+  background: rgba(255, 145, 77, 0.08);
+}
+
+.btn.logout {
+  background-color: rgba(248, 113, 113, 0.1);
+  color: var(--danger-color);
+  border: 1px solid rgba(248, 113, 113, 0.2);
+}
+
+.btn.logout:hover {
+  background-color: var(--danger-color);
+  color: white;
+}
+
+#user-menu {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+#user-display {
+  font-weight: 600;
+  color: var(--accent-color);
+}
+
+/* Canvas Area */
+#canvas-area {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+  cursor: crosshair;
+  background-image: 
+    radial-gradient(rgba(255, 145, 77, 0.12) 1.5px, transparent 0),
+    radial-gradient(rgba(255, 145, 77, 0.12) 1.5px, transparent 0);
+  background-size: 40px 40px;
+  background-position: 0 0, 20px 20px;
+}
+
+/* Spawning Cat element properties */
+.cat-spawn {
+  position: absolute;
+  width: 120px;
+  height: 120px;
+  object-fit: cover;
+  border: 3px solid #ffebd6;
+  transform: translate(-50%, -50%);
+  cursor: pointer;
+  transition: transform 0.2s ease, filter 0.2s ease;
+}
+
+.cat-spawn:hover {
+  transform: translate(-50%, -50%);
+  filter: brightness(1.02);
+  border-color: var(--accent-color);
+}
+
+/* 폭죽 효과용 개별 파티클 스타일 */
+.particle {
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 15;
+  --color: #ff914d;
+  background-color: var(--color);
+  transform: translate(-50%, -50%);
+  animation: explode 0.45s cubic-bezier(0.1, 0.8, 0.3, 1) forwards;
+}
+
+@keyframes explode {
+  0% {
+    transform: translate(-50%, -50%) translate(0, 0) scale(1.2);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, -50%) translate(var(--dx), var(--dy)) scale(0);
+    opacity: 0;
+  }
+}
+
+/* Footer status bar */
+#footer {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px 24px;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+  border-top: 1px solid var(--panel-border);
+  background: rgba(255, 252, 247, 0.95);
+}
+
+.status-online {
+  color: var(--success-color);
+  font-weight: 600;
+}
+
+.status-offline {
+  color: var(--accent-color);
+  font-weight: 600;
+}
+
