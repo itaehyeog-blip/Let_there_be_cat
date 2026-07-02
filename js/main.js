@@ -27,6 +27,9 @@ const logoutBtn = document.getElementById('logout-btn');
 const menuToggleBtn = document.getElementById('menu-toggle');
 const header = document.getElementById('header');
 
+// 아이디(일반 문자열)를 Supabase 호환 이메일 형식으로 자동 변환하는 헬퍼 함수
+const getEmailFromId = (id) => `${id.trim()}@lettherebecat.local`;
+
 // Supabase Auth 세션 상태 변경 실시간 리스너 바인딩
 supabaseClient.auth.onAuthStateChange((event, session) => {
   if (session) {
@@ -43,7 +46,10 @@ function updateAuthUI(isLoggedIn, email = '') {
   if (isLoggedIn) {
     guestMenu.style.display = 'none';
     userMenu.style.display = 'flex';
-    userDisplay.textContent = email;
+    
+    // 이메일에서 도메인 부분을 떼어내고 순수 일반 아이디만 노출
+    const displayId = email.split('@')[0];
+    userDisplay.textContent = displayId;
     statusText.textContent = 'Online';
     statusText.className = 'status-online';
     
@@ -87,13 +93,16 @@ function clearCanvasCats() {
 
 // 2. 회원가입 이벤트 핸들러 (Supabase Auth API 직접 통신)
 registerBtn.addEventListener('click', async () => {
-  const email = emailInput.value.trim();
+  const username = emailInput.value.trim();
   const password = passwordInput.value;
 
-  if (!email || !password) {
-    alert('이메일과 비밀번호를 모두 입력해 주세요.');
+  if (!username || !password) {
+    alert('아이디와 비밀번호를 모두 입력해 주세요.');
     return;
   }
+
+  // 일반 아이디를 가상 이메일로 가공하여 통신
+  const email = getEmailFromId(username);
 
   try {
     const { data, error } = await supabaseClient.auth.signUp({
@@ -104,7 +113,7 @@ registerBtn.addEventListener('click', async () => {
     if (error) {
       alert(`회원가입 실패: ${error.message}`);
     } else {
-      alert('회원가입 요청 성공! 이메일 확인 또는 즉시 로그인이 가능합니다.');
+      alert('회원가입에 성공했습니다! 즉시 로그인이 가능합니다.');
       closeMenu();
     }
   } catch (err) {
@@ -114,13 +123,16 @@ registerBtn.addEventListener('click', async () => {
 
 // 3. 로그인 이벤트 핸들러 (Supabase Auth API 직접 통신)
 loginBtn.addEventListener('click', async () => {
-  const email = emailInput.value.trim();
+  const username = emailInput.value.trim();
   const password = passwordInput.value;
 
-  if (!email || !password) {
-    alert('이메일과 비밀번호를 모두 입력해 주세요.');
+  if (!username || !password) {
+    alert('아이디와 비밀번호를 모두 입력해 주세요.');
     return;
   }
+
+  // 일반 아이디를 가상 이메일로 가공하여 통신
+  const email = getEmailFromId(username);
 
   try {
     const { data, error } = await supabaseClient.auth.signInWithPassword({
