@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Let there be cat - 로그인</title>
+  <!-- Supabase CDN 공식 라이브러리 추가 -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <link rel="stylesheet" href="css/style.css">
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&family=Noto+Sans+KR:wght@300;400;700&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="auth-container">
+    <div class="auth-card">
+      <div class="auth-logo" onclick="location.href='index.html'">🐱 Let there be cat</div>
+      <h2 class="auth-title">로그인</h2>
+      
+      <div class="form-group">
+        <label for="email">이메일 주소</label>
+        <input type="email" id="email" placeholder="email@example.com" required>
+      </div>
+
+      <div class="form-group">
+        <label for="password">비밀번호</label>
+        <input type="password" id="password" placeholder="비밀번호 입력" required>
+      </div>
+
+      <button id="login-submit-btn" class="auth-btn">로그인</button>
+
+      <p class="auth-link">
+        아직 회원이 아니신가요? 
+        <a href="register.html">회원가입</a>
+      </p>
+    </div>
+  </div>
+
+  <script src="js/login.js"></script>
+</body>
+</html>

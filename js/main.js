@@ -10,6 +10,7 @@ let currentUser = null;
 const catImages = ['1.jpg', '2.jpg', '3.jpg', '4.jpg', '5.jpg', '6.jpg'];
 
 // DOM 요소 취득
+// DOM 요소 취득
 const canvasArea = document.getElementById('canvas-area');
 const guestMenu = document.getElementById('guest-menu');
 const userMenu = document.getElementById('user-menu');
@@ -17,10 +18,6 @@ const userDisplay = document.getElementById('user-display');
 const statusText = document.getElementById('status-text');
 const catCountEl = document.getElementById('cat-count');
 
-const emailInput = document.getElementById('auth-email');
-const passwordInput = document.getElementById('auth-password');
-const loginBtn = document.getElementById('login-btn');
-const registerBtn = document.getElementById('register-btn');
 const logoutBtn = document.getElementById('logout-btn');
 
 // 햄버거 토글용 요소 취득
@@ -84,62 +81,6 @@ function clearCanvasCats() {
   const spawnedCats = document.querySelectorAll('.cat-spawn');
   spawnedCats.forEach(cat => cat.remove());
 }
-
-// 2. 회원가입 이벤트 핸들러 (Supabase Auth API 직접 통신)
-registerBtn.addEventListener('click', async () => {
-  const email = emailInput.value.trim();
-  const password = passwordInput.value;
-
-  if (!email || !password) {
-    alert('이메일과 비밀번호를 모두 입력해 주세요.');
-    return;
-  }
-
-  try {
-    const { data, error } = await supabaseClient.auth.signUp({
-      email,
-      password,
-    });
-
-    if (error) {
-      alert(`회원가입 실패: ${error.message}`);
-    } else {
-      alert('회원가입 요청 성공! 이메일 확인을 완료하거나 즉시 로그인이 가능합니다.');
-      closeMenu();
-    }
-  } catch (err) {
-    console.error('회원가입 오류:', err);
-  }
-});
-
-// 3. 로그인 이벤트 핸들러 (Supabase Auth API 직접 통신)
-loginBtn.addEventListener('click', async () => {
-  const email = emailInput.value.trim();
-  const password = passwordInput.value;
-
-  if (!email || !password) {
-    alert('이메일과 비밀번호를 모두 입력해 주세요.');
-    return;
-  }
-
-  try {
-    const { data, error } = await supabaseClient.auth.signInWithPassword({
-      email,
-      password,
-    });
-
-    if (error) {
-      alert(`로그인 실패: ${error.message}`);
-    } else {
-      // 입력란 비우기
-      emailInput.value = '';
-      passwordInput.value = '';
-      closeMenu();
-    }
-  } catch (err) {
-    console.error('로그인 오류:', err);
-  }
-});
 
 // 4. 로그아웃 이벤트 핸들러
 logoutBtn.addEventListener('click', async () => {
