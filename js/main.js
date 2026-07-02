@@ -6,8 +6,47 @@ const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 // 로그인 유저 상태 변수
 let currentUser = null;
 
-// 정적 고양이 이미지 목록 (사용자가 준비한 images/*.jpg 활용)
-const catImages = ['1.jpg', '2.jpg', '3.jpg', '4.jpg', '5.jpg', '6.jpg'];
+// 정적 고양이 이미지 목록 (새롭게 추가된 26개 파일 전체 반영)
+const catImages = [
+  '1.jpg', '2.jpg', '3.jpg', '4.jpg', '5.jpg', '6.jpg', '7.jpg', '8.jpg',
+  '10.jpg', '11.jpg', '12.jpg', '13.jpg', '14.jpg', '15.jpg', '16.jpg',
+  '17.jpeg', '18.jpg', '19.jpeg', '20.jpg',
+  '51.jpg', '52.gif', '53.jpg', '54.gif', '55.gif', '56.gif', '57.gif'
+];
+
+// 가중치 확률에 기반한 무작위 이미지 선택 함수 (51번 이상은 1/10 확률 적용)
+function getRandomCatImage() {
+  // 각 파일의 가중치를 계산하는 헬퍼 함수
+  const getWeight = (filename) => {
+    const match = filename.match(/^(\d+)/);
+    if (match) {
+      const num = parseInt(match[1], 10);
+      if (num >= 51) {
+        return 0.1; // 51번 이상은 가중치 1/10 적용
+      }
+    }
+    return 1.0; // 50번 이하는 가중치 1.0 (일반 확률)
+  };
+
+  // 1. 전체 가중치 합산
+  let totalWeight = 0;
+  for (const img of catImages) {
+    totalWeight += getWeight(img);
+  }
+
+  // 2. 누적 가중치 영역에서 랜덤 값 생성
+  let random = Math.random() * totalWeight;
+
+  // 3. 랜덤 값에 매칭되는 이미지 반환
+  for (const img of catImages) {
+    const weight = getWeight(img);
+    if (random < weight) {
+      return img;
+    }
+    random -= weight;
+  }
+  return catImages[0]; // 예외 처리용 fallback
+}
 
 // DOM 요소 취득
 // DOM 요소 취득
@@ -137,9 +176,8 @@ canvasArea.addEventListener('click', async (event) => {
   const x = event.clientX - rect.left;
   const y = event.clientY - rect.top;
 
-  // 무작위 이미지 선택
-  const randomIndex = Math.floor(Math.random() * catImages.length);
-  const selectedImage = catImages[randomIndex];
+  // 가중치 확률 기반 무작위 이미지 선택
+  const selectedImage = getRandomCatImage();
   const imagePath = `images/${selectedImage}`; // 루트 images 폴더의 파일 가리킴
 
   // 로그인 상태일 때만 Supabase DB 적재
