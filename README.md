@@ -1,4 +1,4 @@
-# 🐱 Let there be cat (고양이 소환소)
+# 🐱 Let there be cat (고양이가 있으라)
 
 > 마우스 클릭으로 화면 가득 고양이를 소환하고, 나만의 고양이 컬렉션을 저장해 보세요!  
 > **[Let there be cat 웹사이트 바로가기](https://itaehyeog-blip.github.io/Let_there_be_cat/)**
