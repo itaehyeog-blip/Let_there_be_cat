@@ -11,41 +11,65 @@ const catImages = [
   '1.jpg', '2.jpg', '3.jpg', '4.jpg', '5.jpg', '6.jpg', '7.jpg', '8.jpg',
   '10.jpg', '11.jpg', '12.jpg', '13.jpg', '14.jpg', '15.jpg', '16.jpg',
   '17.jpeg', '18.jpg', '19.jpeg', '20.jpg',
-  '51.jpg', '52.gif', '53.jpg', '54.gif', '55.gif', '56.gif', '57.gif'
+  '31.gif', '32.gif', '33.gif', '34.gif',
+  '51.jpg', '52.gif', '53.jpg'
 ];
 
-// 가중치 확률에 기반한 무작위 이미지 선택 함수 (51번 이상은 1/10 확률 적용)
+// 확률 등급별 그룹 분할 정의
+const catGroup1 = catImages.filter(img => {
+  const num = parseInt(img.match(/^(\d+)/)[1], 10);
+  return num >= 1 && num <= 20;
+});
+const catGroup2 = catImages.filter(img => {
+  const num = parseInt(img.match(/^(\d+)/)[1], 10);
+  return num >= 31 && num <= 34;
+});
+const catGroup3 = catImages.filter(img => {
+  const num = parseInt(img.match(/^(\d+)/)[1], 10);
+  return num >= 51 && num <= 53;
+});
+
+// 각 그룹별 개별 셔플백 주머니 상태 변수
+let catBag1 = [];
+let catBag2 = [];
+let catBag3 = [];
+
+// 피셔-예이츠 셔플 유틸리티 함수
+function shuffleArray(array) {
+  const arr = [...array];
+  for (let i = arr.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const temp = arr[i];
+    arr[i] = arr[j];
+    arr[j] = temp;
+  }
+  return arr;
+}
+
+// 3-주머니 셔플백 기반 이미지 무작위 선택 함수
 function getRandomCatImage() {
-  // 각 파일의 가중치를 계산하는 헬퍼 함수
-  const getWeight = (filename) => {
-    const match = filename.match(/^(\d+)/);
-    if (match) {
-      const num = parseInt(match[1], 10);
-      if (num >= 51) {
-        return 0.1; // 51번 이상은 가중치 1/10 적용
-      }
+  // 1. 그룹 선택 (가중치 합: 1.0 + 0.5 + 0.1 = 1.6)
+  const rand = Math.random() * 1.6;
+
+  if (rand < 1.0) {
+    // 1~20번 그룹 (확률 1.0/1.6 ≒ 62.5%)
+    if (catBag1.length === 0) {
+      catBag1 = shuffleArray(catGroup1);
     }
-    return 1.0; // 50번 이하는 가중치 1.0 (일반 확률)
-  };
-
-  // 1. 전체 가중치 합산
-  let totalWeight = 0;
-  for (const img of catImages) {
-    totalWeight += getWeight(img);
-  }
-
-  // 2. 누적 가중치 영역에서 랜덤 값 생성
-  let random = Math.random() * totalWeight;
-
-  // 3. 랜덤 값에 매칭되는 이미지 반환
-  for (const img of catImages) {
-    const weight = getWeight(img);
-    if (random < weight) {
-      return img;
+    return catBag1.pop();
+  } else if (rand < 1.5) {
+    // 31~34번 그룹 (확률 0.5/1.6 ≒ 31.25%)
+    if (catBag2.length === 0) {
+      catBag2 = shuffleArray(catGroup2);
     }
-    random -= weight;
+    return catBag2.pop();
+  } else {
+    // 51~53번 그룹 (확률 0.1/1.6 ≒ 6.25%)
+    if (catBag3.length === 0) {
+      catBag3 = shuffleArray(catGroup3);
+    }
+    return catBag3.pop();
   }
-  return catImages[0]; // 예외 처리용 fallback
 }
 
 // DOM 요소 취득
