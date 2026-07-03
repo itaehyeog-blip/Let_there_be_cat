@@ -438,3 +438,74 @@ input:focus {
   text-decoration: underline;
 }
 
+/* 중력 모드 푸터 레이아웃 및 스위치 토글 */
+.gravity-control {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.gravity-label {
+  font-weight: 600;
+  color: var(--text-primary);
+  font-size: 0.85rem;
+}
+
+/* 스위치 슬라이더 기본 디자인 */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 44px;
+  height: 24px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: #e2dcd5;
+  transition: .3s;
+  border-radius: 24px;
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: .3s;
+  border-radius: 50%;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+input:checked + .slider {
+  background-color: var(--accent-color);
+}
+
+input:focus + .slider {
+  box-shadow: 0 0 1px var(--accent-color);
+}
+
+input:checked + .slider:before {
+  transform: translateX(20px);
+}
+
+/* 중력 모드 동작 시 고양이 트랜지션 해제 (부드러운 물리 렌더링용) */
+.cat-spawn.gravity-active {
+  transition: filter 0.2s ease !important; /* transform 트랜지션을 제거해 물리 시뮬레이션 진동 방지 */
+  animation: none !important; /* 소환 스케일 애니메이션 제거하여 물리 바디 좌표에 즉시 고정 */
+}
+
+

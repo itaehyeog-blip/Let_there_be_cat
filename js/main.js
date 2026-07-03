@@ -6,6 +6,17 @@ const supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
 // 로그인 유저 상태 변수
 let currentUser = null;
 
+// Matter.js 물리 엔진 별칭 설정
+const { Engine, World, Bodies, Composite, Runner } = Matter;
+
+// 물리 시뮬레이션 상태 변수
+let isGravityMode = false;
+let engine = null;
+let world = null;
+let runner = null;
+const bodiesMap = new Map(); // key: img 요소, value: Matter.js Body
+let boundaries = []; // 바닥 및 좌우 벽 bodies
+
 // 정적 고양이 이미지 목록 (새롭게 추가된 26개 파일 전체 반영)
 const catImages = [
   '1.jpg', '2.jpg', '3.jpg', '4.jpg', '5.jpg', '6.jpg', '7.jpg', '8.jpg',
@@ -87,6 +98,9 @@ const logoutBtn = document.getElementById('logout-btn');
 const menuToggleBtn = document.getElementById('menu-toggle');
 const header = document.getElementById('header');
 
+// 중력 모드 토글 스위치 요소 취득
+const gravityToggle = document.getElementById('gravity-toggle');
+
 // Supabase Auth 세션 상태 변경 실시간 리스너 바인딩
 supabaseClient.auth.onAuthStateChange((event, session) => {
   if (session) {
@@ -139,10 +153,18 @@ document.addEventListener('click', (e) => {
   }
 });
 
-// 캔버스 내 생성된 고양이 이미지 제거
+// 캔버스 내 생성된 고양이 이미지 및 물리 바디 전체 제거
 function clearCanvasCats() {
   const spawnedCats = document.querySelectorAll('.cat-spawn');
-  spawnedCats.forEach(cat => cat.remove());
+  spawnedCats.forEach(cat => {
+    // 물리 엔진에서 바디 제거
+    const body = bodiesMap.get(cat);
+    if (body && world) {
+      Composite.remove(world, body);
+    }
+    cat.remove();
+  });
+  bodiesMap.clear();
 }
 
 // 4. 로그아웃 이벤트 핸들러
@@ -241,12 +263,31 @@ canvasArea.addEventListener('click', async (event) => {
 function renderCat(imagePath, x, y, logId) {
   createConfetti(x, y, false);
 
+  // 고양이 이미지 엘리먼트 생성 및 배치
   const img = document.createElement('img');
   img.src = imagePath;
   img.className = 'cat-spawn';
   img.style.left = `${x}px`;
   img.style.top = `${y}px`;
   img.dataset.logId = logId;
+
+  // 중력 모드가 활성화되어 있다면 트랜지션 방지 클래스 추가
+  if (isGravityMode) {
+    img.classList.add('gravity-active');
+  }
+
+  // Matter.js 물리 엔진 바디 생성 (고양이 크기 120px * 120px)
+  if (world) {
+    const body = Bodies.rectangle(x, y, 120, 120, {
+      restitution: 0.5, // 튕김 정도
+      friction: 0.1,    // 마찰력
+      density: 0.001,   // 밀도
+      isStatic: !isGravityMode // 중력 모드가 꺼져있으면 고정(Static) 상태
+    });
+
+    bodiesMap.set(img, body);
+    Composite.add(world, body);
+  }
 
   // 고양이를 다시 클릭하면 삭제
   img.addEventListener('click', async (e) => {
@@ -256,11 +297,18 @@ function renderCat(imagePath, x, y, logId) {
 
     const currentLogId = img.dataset.logId;
 
+    // 물리 엔진 및 좌표 맵에서 제거
+    const body = bodiesMap.get(img);
+    if (body && world) {
+      Composite.remove(world, body);
+      bodiesMap.delete(img);
+    }
+
     const imgX = parseInt(img.style.left, 10);
     const imgY = parseInt(img.style.top, 10);
     createConfetti(imgX, imgY, true);
 
-    // 즉시 제거
+    // DOM 제거
     img.remove();
     updateCatCount();
 
@@ -316,3 +364,130 @@ async function loadHistory() {
     console.error('히스토리 로드 에러:', err);
   }
 }
+
+// ==========================================
+// 9. Matter.js 물리 시뮬레이터 구동 및 관리
+// ==========================================
+
+// 물리 엔진 초기화 함수
+function initPhysics() {
+  engine = Engine.create({
+    gravity: { y: 0 } // 초기 중력은 0 (정적 상태)
+  });
+  world = engine.world;
+  runner = Runner.create();
+
+  // 경계 상자(바닥 및 벽) 생성
+  createBoundaries();
+
+  // 물리 엔진 실행
+  Runner.run(runner, engine);
+
+  // 시뮬레이터 비주얼 동기화 프레임 루프 기동
+  updateVisuals();
+}
+
+// 화면 영역 기반 경계 상자(바닥 및 벽) 갱신/생성 함수
+function createBoundaries() {
+  if (!world) return;
+
+  // 기존 경계벽 제거
+  if (boundaries.length > 0) {
+    Composite.remove(world, boundaries);
+    boundaries = [];
+  }
+
+  const width = canvasArea.clientWidth;
+  const height = canvasArea.clientHeight;
+  const thickness = 100; // 충분히 두껍게 설정하여 고양이가 뚫고 나가지 못하게 함
+
+  // 바닥 (y축 위치는 캔버스 바닥면 + 두께 절반)
+  const ground = Bodies.rectangle(
+    width / 2,
+    height + thickness / 2,
+    width * 2,
+    thickness,
+    { isStatic: true }
+  );
+
+  // 왼쪽 벽
+  const leftWall = Bodies.rectangle(
+    -thickness / 2,
+    height / 2,
+    thickness,
+    height * 2,
+    { isStatic: true }
+  );
+
+  // 오른쪽 벽
+  const rightWall = Bodies.rectangle(
+    width + thickness / 2,
+    height / 2,
+    thickness,
+    height * 2,
+    { isStatic: true }
+  );
+
+  boundaries = [ground, leftWall, rightWall];
+  Composite.add(world, boundaries);
+}
+
+// 매 프레임 물리엔진 바디 위치를 실제 DOM 고양이에 매핑하는 루프 함수
+function updateVisuals() {
+  bodiesMap.forEach((body, img) => {
+    if (isGravityMode) {
+      // 중력 모드가 활성화되었을 때만 물리 엔진의 좌표와 회전각 매핑
+      const x = body.position.x;
+      const y = body.position.y;
+      const angle = body.angle * (180 / Math.PI); // Radian -> Degree 변환
+
+      img.style.left = `${x}px`;
+      img.style.top = `${y}px`;
+      img.style.transform = `translate(-50%, -50%) rotate(${angle}deg)`;
+    } else {
+      // 중력 모드가 꺼졌을 때는 회전 각도 복구 및 기본 중앙 스케일 렌더링 유지
+      img.style.transform = `translate(-50%, -50%) scale(1)`;
+    }
+  });
+
+  requestAnimationFrame(updateVisuals);
+}
+
+// 중력 모드 토글 이벤트 처리
+if (gravityToggle) {
+  gravityToggle.addEventListener('change', (e) => {
+    isGravityMode = e.target.checked;
+
+    if (isGravityMode) {
+      // 중력 모드 ON
+      world.gravity.y = 1.0; // 지구 중력 수준 설정
+
+      bodiesMap.forEach((body, img) => {
+        img.classList.add('gravity-active');
+        Matter.Body.setStatic(body, false); // 물리 연산 활성화
+        
+        // 켜지는 순간 살짝의 불규칙한 회전 및 탄성 효과를 주어 쏟아지게 함
+        Matter.Body.setAngularVelocity(body, (Math.random() - 0.5) * 0.1);
+      });
+    } else {
+      // 중력 모드 OFF
+      world.gravity.y = 0;
+
+      bodiesMap.forEach((body, img) => {
+        img.classList.remove('gravity-active');
+        Matter.Body.setStatic(body, true); // 정적 고정
+
+        // 멈춘 자리에서 점진적으로 서서히 각도 회복 및 속도 완전 정지
+        Matter.Body.setAngle(body, 0);
+        Matter.Body.setVelocity(body, { x: 0, y: 0 });
+        Matter.Body.setAngularVelocity(body, 0);
+      });
+    }
+  });
+}
+
+// 브라우저 윈도우 크기 리사이즈 시 경계벽 동적 갱신
+window.addEventListener('resize', createBoundaries);
+
+// 스크립트 로드 완료 시 물리 엔진 기동
+initPhysics();
